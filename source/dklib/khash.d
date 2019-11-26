@@ -146,6 +146,17 @@ template khash(KT, VT, bool kh_is_map = true, bool useGC = true)
             kfree(cast(void*) this.flags);
             kfree(cast(void*) this.vals);
         }
+
+        /// Lookup optional by key
+        bool get(const KT key, out VT val)
+        {
+          auto x = kh_get(&this, key);
+          if (x != kh_end(&this)) {
+            val = this.vals[x];
+            return true;
+          }
+          return false;
+        }
         
         /// Lookup by key
         ref VT opIndex(KT key)
@@ -707,12 +718,11 @@ auto kh_foreach(kh_t* h, kvar, vvar, code)
 unittest
 {
     import std.stdio : writeln, writefln;
-
     writeln("khash unit tests");
 
     // test: numeric key type must be unsigned
     assert(__traits(compiles, khash!(int, int)) is false);
-    assert(__traits(compiles, khash!(uint,int)) is true);
+    assert(__traits(compiles, khash!(uint, int)) is true);
 
 //    auto kh = khash!(uint, char).kh_init();
 
@@ -756,4 +766,12 @@ unittest
     // test: require
     const auto fw = kh_string.require("flammenwerfer", 21);
     assert(fw == 21);
+
+    // test: get
+    int val;
+    assert(!kh_string.get("key", val));
+
+    kh_string["key"] = 42;
+    assert(kh_string.get("key", val));
+    assert(val == 42);
 }
